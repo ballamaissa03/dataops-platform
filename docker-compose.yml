@@ -1,0 +1,76 @@
+version: '3.8'
+
+networks:
+  dataops-network:
+    driver: bridge
+
+volumes:
+  hdfs-data:
+  spark-data:
+  airflow-data:
+  jupyter-data:
+
+services:
+
+  namenode:
+    build: ./hdfs
+    container_name: hdfs-namenode
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    volumes:
+      - hdfs-data:/data
+    networks:
+      - dataops-network
+
+  spark-master:
+    build: ./spark
+    container_name: spark-master
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    volumes:
+      - ./data:/data
+    networks:
+      - dataops-network
+
+  spark-worker:
+    build: ./spark
+    container_name: spark-worker
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
+    depends_on:
+      - spark-master
+    networks:
+      - dataops-network
+
+  tensorflow:
+    build: ./tensorflow
+    container_name: tensorflow
+    volumes:
+      - ./data:/app/data
+    networks:
+      - dataops-network
+
+  airflow:
+    build: ./airflow
+    container_name: airflow
+    ports:
+      - "8081:8080"
+    volumes:
+      - airflow-data:/opt/airflow
+      - ./scenario:/opt/airflow/dags
+    networks:
+      - dataops-network
+
+  jupyter:
+    build: ./jupyter
+    container_name: jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./data:/home/jovyan/work/data
+    networks:
+      - dataops-network
+    depends_on:
+      - spark-master
+

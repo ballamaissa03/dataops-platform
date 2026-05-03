@@ -1,0 +1,36 @@
+version: '3.8'
+
+networks:
+  dataops-network:
+    driver: overlay
+
+services:
+  spark-master:
+    image: dataops-platform-spark-master:latest
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    networks:
+      - dataops-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  spark-worker:
+    image: dataops-platform-spark-worker:latest
+    networks:
+      - dataops-network
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+
+  jupyter:
+    image: dataops-platform-jupyter:latest
+    ports:
+      - "8888:8888"
+    networks:
+      - dataops-network
+    deploy:
+      replicas: 1
